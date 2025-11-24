@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import { useCart } from "../contexts/CartContext";
+import CartModal from "../components/CartModal";
+import Checkout from '../components/Checkout';
+import ProductModal from '../components/ProductModal';
 import {
   Home,
   LogOut,
@@ -9,6 +13,17 @@ import {
   Search,
   Menu,
 } from "lucide-react";
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  rating: number;
+  reviews: number;
+  category: string;
+  image: string;
+}
 
 const categories = [
   "All",
@@ -674,10 +689,14 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { addToCart, getCartItemsCount } = useCart();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   const handleLogout = () => {
     setShowLogoutModal(false);
-    // Redirect to login page after confirmation
     window.location.href = "/login";
   };
 
@@ -785,8 +804,11 @@ const HomePage = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-4">
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
-                  Cart (0)
+                <button 
+                  onClick={() => setIsCartOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Cart ({getCartItemsCount()})
                 </button>
                 <button
                   onClick={() => setShowLogoutModal(true)}
@@ -800,7 +822,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* PRODUCT GRID */}
+       {/* PRODUCT GRID */}
       <main className="flex-1 p-4 lg:p-8 mt-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
@@ -820,7 +842,11 @@ const HomePage = () => {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-gray-100 cursor-pointer"
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setIsProductModalOpen(true);
+                }}
               >
                 <div className="relative h-48 sm:h-40 overflow-hidden bg-gray-50">
                   <img
@@ -830,7 +856,10 @@ const HomePage = () => {
                   />
 
                   <button
-                    onClick={() => toggleFavorite(product.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent opening product modal when clicking favorite
+                      toggleFavorite(product.id);
+                    }}
                     className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"
                   >
                     <Heart
@@ -865,7 +894,22 @@ const HomePage = () => {
                     <span className="text-base sm:text-lg font-bold text-blue-600">
                       ${product.price.toFixed(2)}
                     </span>
-                    <button className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent opening product modal when clicking add to cart
+                        addToCart({
+                          id: product.id,
+                          name: product.name,
+                          description: product.description,
+                          price: product.price,
+                          rating: product.rating,
+                          image: product.image,
+                          category: product.category,
+                          variant: "Default"
+                        });
+                      }}
+                      className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-colors"
+                    >
                       <ShoppingCart className="w-3 h-3" />
                       <span className="hidden xs:inline">Add</span>
                     </button>
@@ -888,6 +932,33 @@ const HomePage = () => {
           )}
         </div>
       </main>
+
+      {/* Cart Modal */}
+        <CartModal 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onProceedToCheckout={() => {
+          setIsCartOpen(false);
+          setIsCheckoutOpen(true); // Open checkout instead of alert
+        }}
+      />
+
+       {/* Product Details Modal */}
+      <ProductModal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        product={selectedProduct}
+      />
+
+         {/* Checkout Modal */}
+      <Checkout 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onOrderComplete={() => {
+          setIsCheckoutOpen(false);
+          // Optionally show success message or redirect
+        }}
+      />
 
       {/* LOGOUT CONFIRMATION MODAL */}
       {showLogoutModal && (
