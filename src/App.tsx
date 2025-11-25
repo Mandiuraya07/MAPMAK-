@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import FurnitureLanding from "./pages/landing-page";
-import LoginPage from "./pages/login-page";
+import LogInPage from "./pages/login-page";
 import HomePage from "./pages/home";
 
 // ✅ Correct path (inside /pages/)
